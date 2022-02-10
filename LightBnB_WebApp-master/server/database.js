@@ -19,19 +19,19 @@ const pool = new Pool({
  * @param {String} email The email of the user.
  * @return {Promise<{}>} A promise to the user.
  */
- const getUserWithEmail = function(email) {
-  return pool.query(`
-    SELECT * FROM users
-    WHERE email = $1;
-  `, [email])
-  .then(res => {
-    if (res) {
-      return res.rows[0];
-    } else {
-      return null;
-    }
-  })
-  .catch(err => console.error('query error', err.stack));
+ const getUserWithEmail = function (email) {
+  return pool.query(
+    `SELECT *
+   FROM users
+   WHERE email = $1`, [email])
+    .then(res => {
+      const users = res.rows;
+      if (users.length === 0) {
+        return null
+      } else {
+        return res.rows[0]
+      }
+    })
 }
 exports.getUserWithEmail = getUserWithEmail;
 
@@ -40,19 +40,19 @@ exports.getUserWithEmail = getUserWithEmail;
  * @param {string} id The id of the user.
  * @return {Promise<{}>} A promise to the user.
  */
-const getUserWithId = function(id) {
-  return pool.query(`
-    SELECT * FROM users
-    WHERE id = $1;
-  `, [id])
-  .then(res => {
-    if (res) {
-      return res.rows[0];
-    } else {
-      return null;
-    }
-  })
-  .catch(err => console.error('query error', err.stack));
+ const getUserWithId = function (id) {
+  return pool.query(
+    `SELECT *
+   FROM users
+   WHERE id = $1`, [id])
+    .then(res => {
+      const users = res.rows;
+      if (users.length === 0) {
+        return null
+      } else {
+        return res.rows[0]
+      }
+    })
 }
 exports.getUserWithId = getUserWithId;
 
@@ -80,9 +80,22 @@ exports.addUser = addUser;
  * @param {string} guest_id The id of the user.
  * @return {Promise<[{}]>} A promise to the reservations.
  */
-const getAllReservations = function(guest_id, limit = 10) {
-  return getAllProperties(null, 2);
-}
+ const getAllReservations = function (guest_id, limit = 10) {
+  return pool.query(
+    `SELECT reservations.*, properties.*, avg(rating) as average_rating
+    FROM reservations
+    JOIN properties ON properties.id = reservations.property_id
+    JOIN property_reviews ON reservations.id = property_reviews.reservation_id
+    WHERE reservations.guest_id = $1
+    AND reservations.end_date < now()::date
+    GROUP BY properties.id, reservations.id
+    ORDER BY reservations.start_date
+    LIMIT $2`, [guest_id, limit])
+    .then (res => {
+     return res.rows
+    })
+} 
+
 exports.getAllReservations = getAllReservations;
 
 /// Properties
